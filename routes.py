@@ -31,7 +31,7 @@ def get_geolocation_data(ip_address):
             try:
                 response = requests.get(
                     f'https://api.ipgeolocation.io/ipgeo',
-                    params={'apiKey': api_key, 'ip': ip_address, 'fields': 'geo,isp,time_zone', 'include': 'security'},
+                    params={'apiKey': api_key, 'ip': ip_address, 'fields': 'geo,isp,time_zone'},
                     timeout=10
                 )
                 if response.status_code == 200:
@@ -64,6 +64,8 @@ def get_geolocation_data(ip_address):
                         'country_name': data.get('country'),
                         'region': data.get('regionName'),
                         'city': data.get('city'),
+                        'district': None,  # Not available in this API
+                        'zipcode': data.get('zip'),
                         'latitude': data.get('lat'),
                         'longitude': data.get('lon'),
                         'org': data.get('isp'),
@@ -78,7 +80,17 @@ def get_geolocation_data(ip_address):
             if response.status_code == 200:
                 data = response.json()
                 if 'error' not in data:
-                    return data
+                    return {
+                        'country_name': data.get('country_name'),
+                        'region': data.get('region'),
+                        'city': data.get('city'),
+                        'district': None,
+                        'zipcode': data.get('postal'),
+                        'latitude': data.get('latitude'),
+                        'longitude': data.get('longitude'),
+                        'org': data.get('org'),
+                        'timezone': data.get('timezone')
+                    }
         except Exception as e:
             logger.error(f"Error with ipapi.co: {e}")
             
@@ -106,8 +118,6 @@ def track_visitor(page_name):
             visitor.country = geo_data.get('country_name')
             visitor.region = geo_data.get('region')
             visitor.city = geo_data.get('city')
-            visitor.district = geo_data.get('district')
-            visitor.zipcode = geo_data.get('zipcode')
             visitor.latitude = geo_data.get('latitude')
             visitor.longitude = geo_data.get('longitude')
             visitor.isp = geo_data.get('org')
@@ -139,6 +149,16 @@ def about():
 def contact():
     track_visitor('Contact Page')
     return render_template('contact.html')
+
+# UptimeRobot ping endpoint
+@app.route('/ping')
+def ping():
+    return 'OK', 200
+
+# Health check endpoint
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy', 'service': 'visitor-tracker'}), 200
 
 @app.route('/api/visitors')
 def api_visitors():

@@ -8,8 +8,6 @@ class Visitor(db.Model):
     country = db.Column(db.String(100))
     region = db.Column(db.String(100))
     city = db.Column(db.String(100))
-    district = db.Column(db.String(100))
-    zipcode = db.Column(db.String(20))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     isp = db.Column(db.String(200))
