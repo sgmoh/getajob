@@ -38,8 +38,6 @@ def send_discord_notification(visitor, geo_data=None):
         # Add geolocation information if available
         if geo_data and 'error' not in geo_data:
             location_info = []
-            if visitor.district:
-                location_info.append(visitor.district)
             if visitor.city:
                 location_info.append(visitor.city)
             if visitor.region:
@@ -51,14 +49,6 @@ def send_discord_notification(visitor, geo_data=None):
                 embed["fields"].append({
                     "name": "🌍 Location",
                     "value": ", ".join(location_info),
-                    "inline": True
-                })
-            
-            # Add postal code if available
-            if visitor.zipcode:
-                embed["fields"].append({
-                    "name": "📮 Postal Code",
-                    "value": visitor.zipcode,
                     "inline": True
                 })
             
