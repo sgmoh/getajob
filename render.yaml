@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: discord-visitor-tracker
+    env: python
+    buildCommand: pip install -r pyproject.toml
+    startCommand: gunicorn --bind 0.0.0.0:$PORT main:app
+    envVars:
+      - key: IPGEOLOCATION_API_KEY
+        value: 97f60b1cb2bc4b519e8cbfdda86e8435
+      - key: DISCORD_WEBHOOK_URL
+        value: https://discord.com/api/webhooks/1379126417362780190/Ec-Hgr9sMHTDWNZsqpcTnDUQ1AEyFLpANtR48Syj9ufVHGm7L1Hcvd1FpgYIpU5tPKqS
+      - key: SESSION_SECRET
+        generateValue: true
+  - type: pserv
+    name: discord-tracker-db
+    env: postgresql
+    plan: free
+    envVars:
+      - key: POSTGRES_USER
+        generateValue: true
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: visitor_tracker
