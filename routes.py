@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 
 def get_client_ip():
     """Get the real client IP address, accounting for proxies"""
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
     elif request.headers.get('X-Real-IP'):
         return request.headers.get('X-Real-IP')
     else:
@@ -25,16 +26,17 @@ def get_geolocation_data(ip_address):
             return None
         
         # Try ipgeolocation.io with API key if available
-        api_key = os.getenv('IPGEOLOCATION_API_KEY')
+        api_key = '97f60b1cb2bc4b519e8cbfdda86e8435'
         if api_key:
             try:
                 response = requests.get(
                     f'https://api.ipgeolocation.io/ipgeo',
-                    params={'apiKey': api_key, 'ip': ip_address},
-                    timeout=5
+                    params={'apiKey': api_key, 'ip': ip_address, 'fields': 'geo,isp,time_zone'},
+                    timeout=10
                 )
                 if response.status_code == 200:
                     data = response.json()
+                    logger.info(f"IPGeolocation.io response: {data}")
                     # Convert to consistent format
                     return {
                         'country_name': data.get('country_name'),
@@ -43,8 +45,10 @@ def get_geolocation_data(ip_address):
                         'latitude': float(data.get('latitude', 0)) if data.get('latitude') else None,
                         'longitude': float(data.get('longitude', 0)) if data.get('longitude') else None,
                         'org': data.get('isp'),
-                        'timezone': data.get('time_zone', {}).get('name')
+                        'timezone': data.get('time_zone', {}).get('name') if data.get('time_zone') else None
                     }
+                else:
+                    logger.error(f"IPGeolocation.io API error: {response.status_code} - {response.text}")
             except Exception as e:
                 logger.error(f"Error with ipgeolocation.io: {e}")
         
