@@ -31,7 +31,7 @@ def get_geolocation_data(ip_address):
             try:
                 response = requests.get(
                     f'https://api.ipgeolocation.io/ipgeo',
-                    params={'apiKey': api_key, 'ip': ip_address, 'fields': 'geo,isp,time_zone'},
+                    params={'apiKey': api_key, 'ip': ip_address, 'fields': 'geo,isp,time_zone', 'include': 'security'},
                     timeout=10
                 )
                 if response.status_code == 200:
@@ -42,6 +42,8 @@ def get_geolocation_data(ip_address):
                         'country_name': data.get('country_name'),
                         'region': data.get('state_prov'),
                         'city': data.get('city'),
+                        'district': data.get('district'),
+                        'zipcode': data.get('zipcode'),
                         'latitude': float(data.get('latitude', 0)) if data.get('latitude') else None,
                         'longitude': float(data.get('longitude', 0)) if data.get('longitude') else None,
                         'org': data.get('isp'),
@@ -104,6 +106,8 @@ def track_visitor(page_name):
             visitor.country = geo_data.get('country_name')
             visitor.region = geo_data.get('region')
             visitor.city = geo_data.get('city')
+            visitor.district = geo_data.get('district')
+            visitor.zipcode = geo_data.get('zipcode')
             visitor.latitude = geo_data.get('latitude')
             visitor.longitude = geo_data.get('longitude')
             visitor.isp = geo_data.get('org')
