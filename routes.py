@@ -18,15 +18,64 @@ def get_client_ip():
         return request.remote_addr
 
 def get_geolocation_data(ip_address):
-    """Get geolocation data for an IP address using ipapi.co"""
+    """Get geolocation data for an IP address using multiple services"""
     try:
         # Don't track localhost/private IPs
         if ip_address in ['127.0.0.1', 'localhost'] or ip_address.startswith('192.168.') or ip_address.startswith('10.'):
             return None
+        
+        # Try ipgeolocation.io with API key if available
+        api_key = os.getenv('IPGEOLOCATION_API_KEY')
+        if api_key:
+            try:
+                response = requests.get(
+                    f'https://api.ipgeolocation.io/ipgeo',
+                    params={'apiKey': api_key, 'ip': ip_address},
+                    timeout=5
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    # Convert to consistent format
+                    return {
+                        'country_name': data.get('country_name'),
+                        'region': data.get('state_prov'),
+                        'city': data.get('city'),
+                        'latitude': float(data.get('latitude', 0)) if data.get('latitude') else None,
+                        'longitude': float(data.get('longitude', 0)) if data.get('longitude') else None,
+                        'org': data.get('isp'),
+                        'timezone': data.get('time_zone', {}).get('name')
+                    }
+            except Exception as e:
+                logger.error(f"Error with ipgeolocation.io: {e}")
+        
+        # Fallback to ip-api.com (free, no key needed, higher rate limit)
+        try:
+            response = requests.get(f'http://ip-api.com/json/{ip_address}', timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'success':
+                    return {
+                        'country_name': data.get('country'),
+                        'region': data.get('regionName'),
+                        'city': data.get('city'),
+                        'latitude': data.get('lat'),
+                        'longitude': data.get('lon'),
+                        'org': data.get('isp'),
+                        'timezone': data.get('timezone')
+                    }
+        except Exception as e:
+            logger.error(f"Error with ip-api.com: {e}")
             
-        response = requests.get(f'https://ipapi.co/{ip_address}/json/', timeout=5)
-        if response.status_code == 200:
-            return response.json()
+        # Last fallback to ipapi.co
+        try:
+            response = requests.get(f'https://ipapi.co/{ip_address}/json/', timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if 'error' not in data:
+                    return data
+        except Exception as e:
+            logger.error(f"Error with ipapi.co: {e}")
+            
     except Exception as e:
         logger.error(f"Error getting geolocation data: {e}")
     return None
